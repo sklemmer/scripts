@@ -7,7 +7,12 @@ a container more easily"""
 from typing import List, Any, Union
 
 import os
-from pathlib import Path
+try:
+    from pathlib import Path
+    Path().expanduser()
+except (ImportError,AttributeError):
+    from pathlib2 import Path
+
 import click
 import docker as moby
 

@@ -22,5 +22,5 @@ before_script:
 # command to run tests
 script:
   - pylint --exit-zero utility_container.py
-  - pip list 
+  - pip list
   - ./utility_container.py --help
