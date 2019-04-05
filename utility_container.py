@@ -7,10 +7,12 @@ a container more easily"""
 from typing import List, Any, Union
 
 import os
+
 try:
     from pathlib import Path
+
     Path().expanduser()
-except (ImportError,AttributeError):
+except (ImportError, AttributeError):
     from pathlib2 import Path
 
 import click
@@ -48,18 +50,23 @@ def cli(aws, pwd, docker, image, command, volume):
     repository, tag = pull_if_not_exist(image, client)
     volumes = prepare_volumes(aws, pwd, docker, volume)
 
+    exit_code = 1
     try:
-        container_logs = client.containers.run(
+        container = client.containers.create(
             image='%s:%s' % (repository, tag),
             volumes=volumes,
             command=command,
             detach=False,
         )
-        click.echo(container_logs, nl=False)
+        container.start()
+        click.echo(container.logs(follow=True), nl=False)
+        container.remove()
+        exit_code = 0
     except ContainerError as e:
         click.echo(e.container.logs(), err=True, nl=False)
         e.container.remove()
-        exit(1)
+    finally:
+        exit(exit_code)
 
 
 def pull_if_not_exist(image, client):
