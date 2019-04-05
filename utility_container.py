@@ -31,10 +31,12 @@ CONTAINER_TMP = '/tmp/'
               help='Include additional directories')
 @click.option('--aws', is_flag=True, help='Include AWS Credentials')
 @click.option('--pwd', '--cwd', is_flag=True, help='Include current working directory')
+@click.option('--interactive', '-i', is_flag=True, help='Include current working directory')
+@click.option('--tty', '-t', is_flag=True, help='Include current working directory')
 @click.option('--docker', is_flag=True, help='Include docker socket')
 @click.argument('image', nargs=1)
 @click.argument('command', nargs=-1)
-def cli(aws, pwd, docker, image, command, volume):
+def cli(aws, pwd, docker, image, command, volume, interactive, tty):
     """
     basic command
     :param aws:
@@ -57,6 +59,8 @@ def cli(aws, pwd, docker, image, command, volume):
             volumes=volumes,
             command=command,
             detach=False,
+            stdin_open=interactive,
+            tty=tty
         )
         container.start()
         click.echo(container.logs(follow=True), nl=False)
