@@ -17,9 +17,9 @@ install:
   - pip install -r requirements.txt
 
 before_script:
-  - chmod +x utility-container.py
+  - chmod +x utility_container.py
 
 # command to run tests
 script:
-  - pylint utility-container.py
-  - ./utility-container.py --help
+  - pylint --exit-zero utility_container.py
+  - ./utility_container.py --help

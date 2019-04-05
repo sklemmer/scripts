@@ -1,33 +1,51 @@
 #!/usr/bin/env python3
+
+"""This script takes some arguments and
+passes them along to docker for running tools inside
+a container more easily"""
+
 from typing import List, Any, Union
 
+import os
+from pathlib import Path
 import click
 import docker as moby
-from pathlib import Path
-from docker.errors import ContainerError, ImageNotFound
-import os
 
-docker_socket = 'var/run/docker.sock'
-volume_str = '%s:%s'
-container_tmp = '/tmp/'
+from docker.errors import ContainerError
+
+DOCKER_SOCKET = 'var/run/docker.sock'
+VOLUME_STR = '%s:%s'
+CONTAINER_TMP = '/tmp/'
 
 
 @click.command()
-@click.option('--dir', '-v', multiple=True, type=click.STRING, help='Include additionals directories')
+@click.option('--volume', '-v', multiple=True,
+              type=click.STRING,
+              help='Include additional directories')
 @click.option('--aws', is_flag=True, help='Include AWS Credentials')
 @click.option('--pwd', '--cwd', is_flag=True, help='Include current working directory')
 @click.option('--docker', is_flag=True, help='Include docker socket')
 @click.argument('image', nargs=1)
 @click.argument('command', nargs=-1)
-def cli(aws, pwd, docker, image, command, dir):
-    client = moby.DockerClient(base_url='unix://' + docker_socket)
+def cli(aws, pwd, docker, image, command, volume):
+    """
+    basic command
+    :param aws:
+    :param pwd:
+    :param docker:
+    :param image:
+    :param command:
+    :param dir:
+    :return:
+    """
+    client = moby.DockerClient(base_url='unix://' + DOCKER_SOCKET)
 
     repository, tag = pull_if_not_exist(image, client)
-    volumes = prepare_volumes(aws, pwd, docker, dir)
+    volumes = prepare_volumes(aws, pwd, docker, volume)
 
     try:
         container_logs = client.containers.run(
-            image=image,
+            image='%s:%s' % (repository, tag),
             volumes=volumes,
             command=command,
             auto_remove=True,
@@ -41,6 +59,13 @@ def cli(aws, pwd, docker, image, command, dir):
 
 
 def pull_if_not_exist(image, client):
+    """
+    Pull image from configured registry if it
+    does not exist locally
+    :param image:
+    :param client:
+    :return:
+    """
     if ':' in image:
         repository = image.split(':')[0]
         tag = image.split(':')[1]
@@ -66,23 +91,34 @@ def pull_if_not_exist(image, client):
     return repository, tag
 
 
-def prepare_volumes(aws, pwd, docker, dir):
+def prepare_volumes(aws, pwd, docker, volume):
+    """
+    Prepare specified volumes
+    allows defining volumes with hostpath:containerpath representation
+    if no containerpath is given the script will
+    expand it to hostpath:/tmp/basename(hostpath)
+    :param aws:
+    :param pwd:
+    :param docker:
+    :param volume:
+    :return:
+    """
     volumes = []
     home = str(Path.home())
     if aws:
         volumes.append(home + '/.aws:/root/.aws:ro')
     if docker:
-        volumes.append('/%s:/%s:ro' % (docker_socket, docker_socket))
+        volumes.append('/%s:/%s:ro' % (DOCKER_SOCKET, DOCKER_SOCKET))
     if pwd:
         cwd = os.getcwd()
-        volumes.append(volume_str % (cwd, container_tmp + os.path.basename(cwd)))
+        volumes.append(VOLUME_STR % (cwd, CONTAINER_TMP + os.path.basename(cwd)))
 
     if dir:
-        for path in dir:
-            v = path
+        for path in volume:
+            vol = path
             if ':' not in path:
-                v = volume_str % (path, container_tmp + os.path.basename(path))
-            volumes.append(v)
+                vol = VOLUME_STR % (path, CONTAINER_TMP + os.path.basename(path))
+            volumes.append(vol)
     return volumes
 
 
