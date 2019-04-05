@@ -53,13 +53,12 @@ def cli(aws, pwd, docker, image, command, volume):
             image='%s:%s' % (repository, tag),
             volumes=volumes,
             command=command,
-            auto_remove=True,
             detach=False,
-            # stream=True
         )
-        click.echo(container_logs)
+        click.echo(container_logs, nl=False)
     except ContainerError as e:
-        click.echo(e, err=True)
+        click.echo(e.container.logs(), err=True, nl=False)
+        e.container.remove()
         exit(1)
 
 
