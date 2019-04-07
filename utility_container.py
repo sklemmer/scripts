@@ -36,7 +36,7 @@ CONTAINER_TMP = '/tmp/'
 @click.option('--docker', is_flag=True, help='Include docker socket')
 @click.argument('image', nargs=1)
 @click.argument('command', nargs=-1)
-def cli(aws, pwd, docker, image, command, volume, interactive, tty):
+def cli(aws, pwd, docker, image, command, volume, interactive, tty, wd):
     """
     basic command
     :param aws:
@@ -53,6 +53,12 @@ def cli(aws, pwd, docker, image, command, volume, interactive, tty):
     volumes = prepare_volumes(aws, pwd, docker, volume)
 
     exit_code = 1
+
+    working_dir = None
+    if pwd:
+        cwd = os.getcwd()
+        working_dir = CONTAINER_TMP + os.path.basename(cwd)
+
     try:
         container = client.containers.create(
             image='%s:%s' % (repository, tag),
@@ -60,7 +66,8 @@ def cli(aws, pwd, docker, image, command, volume, interactive, tty):
             command=command,
             detach=False,
             stdin_open=interactive,
-            tty=tty
+            tty=tty,
+            working_dir=working_dir
         )
         container.start()
         click.echo(container.logs(follow=True), nl=False)
