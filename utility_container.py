@@ -36,7 +36,7 @@ CONTAINER_TMP = '/tmp/'
 @click.option('--docker', is_flag=True, help='Include docker socket')
 @click.argument('image', nargs=1)
 @click.argument('command', nargs=-1)
-def cli(aws, pwd, docker, image, command, volume, interactive, tty, wd):
+def cli(aws, pwd, docker, image, command, volume, interactive, tty):
     """
     basic command
     :param aws:
