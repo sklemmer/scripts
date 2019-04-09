@@ -47,7 +47,7 @@ def cli(aws, pwd, docker, image, command, volume, interactive, tty):
     :param dir:
     :return:
     """
-    client = moby.DockerClient(base_url='unix://' + DOCKER_SOCKET)
+    client = moby.DockerClient(base_url='unix://' + DOCKER_SOCKET, timeout=10)
 
     repository, tag = pull_if_not_exist(image, client)
     volumes = prepare_volumes(aws, pwd, docker, volume)
@@ -70,7 +70,10 @@ def cli(aws, pwd, docker, image, command, volume, interactive, tty):
             working_dir=working_dir
         )
         container.start()
-        click.echo(container.logs(follow=True), nl=False)
+
+        for line in container.logs(stream=True, follow=True):
+            click.echo(line, nl=False)
+
         container.remove()
         exit_code = 0
     except ContainerError as e:
